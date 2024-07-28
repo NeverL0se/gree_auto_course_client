@@ -105,7 +105,7 @@ export default {
       this.status = '正在解析课程...'
       this.btn_disabled = true
 
-      axios.post('http://localhost:5000/courses', {
+      axios.post('/api/courses', {
         'access_token': this.token.access_token,
         'refresh_token': this.token.refresh_token,
       })
@@ -131,7 +131,7 @@ export default {
           return
         }
 
-        axios.get('http://localhost:5000/ratio')
+        axios.get('/api/ratio')
           .then((res) => {
             let data = res.data
             if ('1' == data['playing']) {
@@ -167,7 +167,7 @@ export default {
             return
           }
           this.unfinished_videos[i]['show'] = '1'
-          await axios.post('http://localhost:5000/play', this.unfinished_videos[i])
+          await axios.post('/api/play', this.unfinished_videos[i])
             .then((res) => {
               this.unfinished_videos[i]['duration'] = this.unfinished_videos[i]['total_duration']
               this.unfinished_videos[i]['show'] = this.unfinished_videos[i]['0']
