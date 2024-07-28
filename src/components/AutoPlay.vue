@@ -88,6 +88,8 @@ export default {
   name: 'AutoPlay',
   data() {
     return {
+      mode: '',
+      current_courseware_id: '',
       unfinished_videos: [],
       token: {
         access_token: '',
@@ -99,13 +101,20 @@ export default {
   },
 
   methods: {
+
+    get_url() {
+      if (this.mode === 'dev') {
+        return 'http://localhost:5000/'
+      }
+      return '/api/'
+    },
     // 获取课程
     submitToken(e) {
       e.preventDefault();
       this.status = '正在解析课程...'
       this.btn_disabled = true
 
-      axios.post('/api/courses', {
+      axios.post(this.get_url() + 'courses', {
         'access_token': this.token.access_token,
         'refresh_token': this.token.refresh_token,
       })
@@ -127,24 +136,39 @@ export default {
     // 更新进度
     get_ratio() {
       let progress = setInterval(() => {
-        if (!this.unfinished_videos.length > 0) {
-          return
-        }
 
-        axios.get('/api/ratio')
+        axios.get(this.get_url() + 'ratio')
           .then((res) => {
             let data = res.data
-            if ('1' == data['playing']) {
+
+            if ('1' === data['token_expiration']) {
+              this.status = '登录过期，刷新页面重来'
+              this.btn_disabled = true
+              this.unfinished_videos = []
+              clearInterval(progress)
+              return
+            }
+
+            if (1 === data['playing']) {
 
               let duration = (parseInt(data['duration']))
               let total_duration = (parseInt(data['total_duration']))
 
-              if (duration > total_duration) {
+              // 纠正播放进度超过时长
+              if (duration >= total_duration) {
                 duration = total_duration
               }
-              let video = this.unfinished_videos.find(e => e['courseware_id'] == data['courseware_id'])
+
+              let video = this.unfinished_videos.find(e => e['courseware_id'] === data['courseware_id'])
+
               video['duration'] = duration
               video['total_duration'] = total_duration
+
+              // 播放完成
+              if (duration === total_duration && total_duration !== 0 && this.current_courseware_id === data['courseware_id']) {
+                this.current_courseware_id = ''
+                video['show'] = '0'
+              }
             }
           })
           .catch((error) => {
@@ -156,35 +180,47 @@ export default {
     },
 
     // 播放视频
-    async playVideos() {
-      if (this.unfinished_videos.length > 0) {
-        this.status = '开发人员正在后台观看视频...'
-        this.btn_disabled = true
-        this.get_ratio()
+    playVideos() {
 
-        for (const i in this.unfinished_videos) {
-          if (!this.unfinished_videos.length > 0) {
-            return
-          }
-          this.unfinished_videos[i]['show'] = '1'
-          await axios.post('/api/play', this.unfinished_videos[i])
-            .then((res) => {
-              this.unfinished_videos[i]['duration'] = this.unfinished_videos[i]['total_duration']
-              this.unfinished_videos[i]['show'] = this.unfinished_videos[i]['0']
-            })
-            .catch((error) => {
-              this.unfinished_videos = []
-              this.status = '一键观看'
-              this.btn_disabled = false
-              console.error(error);
-            });
-        }
-        this.status = '课程已全部完成'
-        this.btn_disabled = true
-      } else {
+      if (this.unfinished_videos.length === 0) {
         this.status = '检查一下是不是粘错了'
         this.btn_disabled = false
+        return
       }
+
+      this.status = '开发人员正在后台观看视频...'
+      this.btn_disabled = true
+
+      let i = 0
+      let interval = setInterval(() => {
+
+        if (i === this.unfinished_videos.length) {
+          this.status = '课程已全部完成'
+          this.btn_disabled = true
+          clearInterval(interval)
+          return
+        }
+
+        if (this.current_courseware_id === '') {
+          axios.post(this.get_url() + 'play', this.unfinished_videos[i])
+            .then((res) => {
+
+            })
+            .catch((error) => {
+              /*this.unfinished_videos = []
+              this.status = '一键观看'
+              this.btn_disabled = false*/
+              console.error(error);
+            });
+          this.current_courseware_id = this.unfinished_videos[i]['courseware_id']
+          this.unfinished_videos[i]['show'] = '1'
+
+          i++
+        }
+      }, 1000)
+
+      // 开始更新进度
+      this.get_ratio()
     },
 
     secondsToMinutes(seconds) {
