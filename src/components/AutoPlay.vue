@@ -101,20 +101,13 @@ export default {
   },
 
   methods: {
-
-    get_url() {
-      if (this.mode === 'dev') {
-        return 'http://localhost:5000/'
-      }
-      return '/api/'
-    },
     // 获取课程
     submitToken(e) {
       e.preventDefault();
       this.status = '正在解析课程...'
       this.btn_disabled = true
 
-      axios.post(this.get_url() + 'courses', {
+      axios.post('/api/courses', {
         'access_token': this.token.access_token,
         'refresh_token': this.token.refresh_token,
       })
@@ -137,7 +130,7 @@ export default {
     get_ratio() {
       let progress = setInterval(() => {
 
-        axios.get(this.get_url() + 'ratio')
+        axios.get('/api/ratio')
           .then((res) => {
             let data = res.data
 
@@ -202,7 +195,7 @@ export default {
         }
 
         if (this.current_courseware_id === '') {
-          axios.post(this.get_url() + 'play', this.unfinished_videos[i])
+          axios.post('/api/play', this.unfinished_videos[i])
             .then((res) => {
 
             })
