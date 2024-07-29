@@ -14,7 +14,7 @@
 
     <div class="row justify-content-md-center">
       <div class="col-5">
-        <b-form @submit="submitToken">
+        <b-form @submit="auto_play">
           <b-form-input id="access-token" name="access_token" v-model="token.access_token"
                         required
                         style="margin-top: 20px;"
@@ -102,7 +102,7 @@ export default {
 
   methods: {
     // 获取课程
-    submitToken(e) {
+    auto_play(e) {
       e.preventDefault();
       this.status = '正在解析课程...'
       this.btn_disabled = true
