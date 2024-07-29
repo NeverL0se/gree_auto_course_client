@@ -7,7 +7,8 @@
         </div>
 
         <div class="row">
-          2. 找到位置：按F12 - 应用 - 存储 / 本地存储空间 / https://jxzh.zh12333.com - 复制： accessToken 和 refreshToken
+          2. 找到位置：按F12 - 应用 - 存储 / 本地存储空间 / https://jxzh.zh12333.com - 复制： access_token 和
+          refresh_token
         </div>
       </div>
     </div>
@@ -19,13 +20,13 @@
                         required
                         style="margin-top: 20px;"
                         size="lg"
-                        placeholder="粘贴 accessToken"></b-form-input>
+                        placeholder="粘贴 access_token"></b-form-input>
 
           <b-form-input id="refresh-token" name="refresh_token" v-model="token.refresh_token"
                         required
                         style="margin-top: 20px;"
                         size="lg"
-                        placeholder="粘贴 refreshToken"></b-form-input>
+                        placeholder="粘贴 refresh_token"></b-form-input>
           <div class="row">
             <button :disabled="btn_disabled" id="btn-x" type="submit" class="btn-x btn btn-primary ">{{
                 this.status
@@ -71,7 +72,7 @@
             <td>{{ secondsToMinutes(video.total_duration) }}</td>
             <td>{{ video.label }}</td>
             <td>
-              <div class="spinner-grow  spinner-grow-sm text-success" role="status" v-if="video.show==='1'">
+              <div class="spinner-grow  spinner-grow-sm text-success" role="status" v-if="video.playing==='1'">
                 <span class="visually-hidden">Loading...</span></div>
             </td>
           </tr>
@@ -88,8 +89,6 @@ export default {
   name: 'AutoPlay',
   data() {
     return {
-      mode: '',
-      current_courseware_id: '',
       unfinished_videos: [],
       token: {
         access_token: '',
@@ -102,20 +101,23 @@ export default {
   },
 
   methods: {
-    // 获取课程
+    // 自动播放
     auto_play(e) {
       e.preventDefault();
       this.status = '正在解析课程...'
       this.btn_disabled = true
 
-      axios.post('/api/courses', {
+      this.refresh_token()
+
+      // 获取课程
+      axios.post('/courses', {
         'access_token': this.token.access_token,
         'refresh_token': this.token.refresh_token,
       })
         .then((res) => {
-          this.token.access_token = ''
-          this.token.refresh_token = ''
+
           this.unfinished_videos = res.data;
+          // 播放视频
           this.playVideos();
 
         })
@@ -125,52 +127,6 @@ export default {
           this.btn_disabled = false
           console.error(error);
         });
-    },
-
-    // 更新进度
-    get_ratio() {
-      let progress = setInterval(() => {
-
-        axios.get('/api/ratio')
-          .then((res) => {
-            let data = res.data
-
-            if ('1' === data['token_expiration']) {
-              this.status = '登录过期，刷新页面重来'
-              this.btn_disabled = true
-              this.unfinished_videos = []
-              clearInterval(progress)
-              return
-            }
-
-            if (1 === data['playing']) {
-
-              let duration = (parseInt(data['duration']))
-              let total_duration = (parseInt(data['total_duration']))
-
-              // 纠正播放进度超过时长
-              if (duration >= total_duration) {
-                duration = total_duration
-              }
-
-              let video = this.unfinished_videos.find(e => e['courseware_id'] === data['courseware_id'])
-
-              video['duration'] = duration
-              video['total_duration'] = total_duration
-
-              // 播放完成
-              if (duration === total_duration && total_duration !== 0 && this.current_courseware_id === data['courseware_id']) {
-                this.current_courseware_id = ''
-                video['show'] = '0'
-              }
-            }
-          })
-          .catch((error) => {
-            clearInterval(progress)
-            // eslint-disable-next-line
-            console.error(error);
-          });
-      }, 2000)
     },
 
     // 播放视频
@@ -185,9 +141,21 @@ export default {
       this.status = '开发人员正在后台观看视频...'
       this.btn_disabled = true
 
-      let i = 0
-      let interval = setInterval(() => {
+      // 开始播放课程
+      this.play_control()
+    },
 
+    // 播放视频
+    play_control() {
+      let i = 0
+      let interval = setInterval(async () => {
+
+        if (this.unfinished_videos.length === 0) {
+          clearInterval(interval)
+          return
+        }
+
+        // 课程全部播放完成
         if (i === this.unfinished_videos.length) {
           this.status = '课程已全部完成'
           this.btn_disabled = true
@@ -195,26 +163,88 @@ export default {
           return
         }
 
-        if (this.current_courseware_id === '') {
-          axios.post('/api/play', this.unfinished_videos[i])
-            .then((res) => {
+        let current_video = this.unfinished_videos[i]
+        current_video.access_token = this.token.access_token
 
+        // 视频未开始播放时，加载视频
+        if (current_video['total_duration'] === '未加载') {
+
+          axios.post('/init_video', current_video)
+            .then((res) => {
+              // 加载视频时长
+              this.unfinished_videos[i]['duration'] = 0
+              this.unfinished_videos[i]['total_duration'] = (parseInt(res.data['total_duration']))
+              this.unfinished_videos[i]['browse_id'] = (res.data['browse_id'])
             })
             .catch((error) => {
-              /*this.unfinished_videos = []
-              this.status = '一键观看'
-              this.btn_disabled = false*/
+              if (error.response.status === 401) {
+                this.refresh_token()
+              }
               console.error(error);
             });
-          this.current_courseware_id = this.unfinished_videos[i]['courseware_id']
-          this.unfinished_videos[i]['show'] = '1'
-
-          i++
         }
-      }, 1000)
+        // 已加载视频
+        else {
 
-      // 开始更新进度
-      this.get_ratio()
+          switch (current_video['playing']) {
+            // 未开始播放
+            case '0':
+
+              if (this.unfinished_videos[i]['duration'] === 0) {
+
+                axios.post('/play_start', current_video)
+                  .then(() => {
+                    this.unfinished_videos[i]['playing'] = '1'
+                  })
+                  .catch((error) => {
+                    if (error.response.status === 401) {
+                      this.refresh_token()
+                    }
+                    console.error(error);
+                  });
+              }
+              break
+
+            // 播放中
+            case '1':
+
+              // 播放完成
+              if (current_video['duration'] === current_video['total_duration']) {
+                await axios.post('/play_finish', current_video)
+                  .then(() => {
+                    this.unfinished_videos[i]['playing'] = '0'
+                    i++
+                  })
+                  .catch((error) => {
+                    if (error.response.status === 401) {
+                      this.refresh_token()
+                    }
+                    console.error(error);
+                  });
+
+                // 播放中，发送心跳，伪装播放
+              } else {
+                let simulate_duration = current_video['duration'] + 3
+                if (simulate_duration >= current_video['total_duration']) {
+                  simulate_duration = current_video['total_duration']
+                }
+
+                this.unfinished_videos[i]['duration'] = simulate_duration
+
+                axios.post('/play_heartbeat', current_video)
+                  .then(() => {
+                  })
+                  .catch((error) => {
+                    if (error.response.status === 401) {
+                      this.refresh_token()
+                    }
+                    console.error(error);
+                  });
+              }
+              break
+          }
+        }
+      }, 3000)
     },
 
     secondsToMinutes(seconds) {
@@ -225,7 +255,6 @@ export default {
       let secondsLeft = (seconds % 60).toString().padStart(2, '0');
       return `${minutes}:${secondsLeft}`;
     },
-
     secondsToPercentage(duration, total) {
       if ('未加载' === total) {
         return '未加载'
@@ -233,7 +262,30 @@ export default {
       return ((parseInt(duration) / parseInt(total)) * 100).toFixed(2) + '%'
 
     },
+
+    // 刷新token
+    async refresh_token() {
+      await axios.post(
+        '/refresh_token',
+        {
+          'access_token': this.token.access_token,
+          'refresh_token': this.token.refresh_token
+        }
+      ).then((res) => {
+        if (res.status === 200) {
+          this.token = res.data
+        }
+      }).catch((error) => {
+        if (error.response.status === 401) {
+          this.status = '登录过期，刷新页面重来'
+          this.btn_disabled = true
+          this.unfinished_videos = []
+        }
+        console.error(error);
+      })
+    },
   },
+
   created() {
   },
 };
