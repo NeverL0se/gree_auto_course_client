@@ -95,6 +95,7 @@ export default {
         access_token: '',
         refresh_token: '',
       },
+
       status: '一键观看',
       btn_disabled: false
     };
