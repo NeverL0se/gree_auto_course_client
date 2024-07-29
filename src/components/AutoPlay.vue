@@ -15,13 +15,13 @@
     <div class="row justify-content-md-center">
       <div class="col-5">
         <b-form @submit="submitToken">
-          <b-form-input id="access-token" name="access_token" v-model="token.access_token"
+          <b-form-input id="access-token" name="access_token" v-model="token.accessToken"
                         required
                         style="margin-top: 20px;"
                         size="lg"
                         placeholder="粘贴 accessToken"></b-form-input>
 
-          <b-form-input id="refresh-token" name="refresh_token" v-model="token.refresh_token"
+          <b-form-input id="refresh-token" name="refresh_token" v-model="token.refreshToken"
                         required
                         style="margin-top: 20px;"
                         size="lg"
