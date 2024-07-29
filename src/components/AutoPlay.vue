@@ -88,12 +88,12 @@ export default {
   name: 'AutoPlay',
   data() {
     return {
-      mode: '',
+      mode: 'dev',
       current_courseware_id: '',
       unfinished_videos: [],
       token: {
-        access_token: '',
-        refresh_token: '',
+        accessToken: '',
+        refreshToken: '',
       },
       status: '一键观看',
       btn_disabled: false
@@ -101,6 +101,49 @@ export default {
   },
 
   methods: {
+    reset_token() {
+
+      axios.post('https://jxzh.zh12333.com/zhskillApi/api/auth/refreshToken',
+        {refreshToken: this.token.refreshToken},
+        {
+          headers: this.get_post_headers(this.token.accessToken)
+        }
+      ).then((res) => {
+
+        if (res.status === 200){
+          this.token = res.data.data
+        }
+
+        console.log(this.token)
+
+
+
+
+
+
+      }).catch((error) => {
+
+        if (error.response.status ===401){
+        }
+
+        //console.error(error);
+      })
+
+
+    },
+    get_post_headers(access_token) {
+
+      return {
+        "Accept": "application/json",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+        "Authorization": access_token,
+        "Cache-Control": "no-cache",
+        "Content-Type": "application/json",
+        "Pragma": "no-cache",
+        "X-Requested-With": "XMLHttpRequest",
+      }
+    },
+
 
     get_url() {
       if (this.mode === 'dev') {
@@ -111,6 +154,12 @@ export default {
     // 获取课程
     submitToken(e) {
       e.preventDefault();
+
+
+      this.reset_token()
+      return
+
+
       this.status = '正在解析课程...'
       this.btn_disabled = true
 
