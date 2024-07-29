@@ -14,14 +14,14 @@
 
     <div class="row justify-content-md-center">
       <div class="col-5">
-        <b-form @submit="auto_play">
-          <b-form-input id="access-token" name="access_token" v-model="token.accessToken"
+        <b-form @submit="submitToken">
+          <b-form-input id="access-token" name="access_token" v-model="token.access_token"
                         required
                         style="margin-top: 20px;"
                         size="lg"
                         placeholder="粘贴 accessToken"></b-form-input>
 
-          <b-form-input id="refresh-token" name="refresh_token" v-model="token.refreshToken"
+          <b-form-input id="refresh-token" name="refresh_token" v-model="token.refresh_token"
                         required
                         style="margin-top: 20px;"
                         size="lg"
@@ -88,147 +88,26 @@ export default {
   name: 'AutoPlay',
   data() {
     return {
-      mode: 'dev',
+      mode: '',
       current_courseware_id: '',
       unfinished_videos: [],
       token: {
-        accessToken: '',
-        refreshToken: '',
+        access_token: '',
+        refresh_token: '',
       },
       status: '一键观看',
-      btn_disabled: false,
-
-
-      skill_videos: [],
-      temp:[]
-
-
+      btn_disabled: false
     };
   },
 
   methods: {
-    // 刷新token
-    async reset_token() {
-      await axios.post(
-        '/auth/refreshToken',
-        {refreshToken: this.token.refreshToken},
-        {headers: this.get_headers()}
-      ).then((res) => {
-        if (res.status === 200) {
-          this.token = res.data.data
-        }
-      }).catch((error) => {
-        if (error.response.status === 401) {
-          this.status = '登录过期，刷新页面重来'
-          this.btn_disabled = true
-          this.unfinished_videos = []
-        }
-        console.error(error);
-      })
-    },
-
     // 获取课程
-    auto_play(e) {
-      e.preventDefault();
-
-      this.reset_token()
-
-      this.status = '正在解析课程...'
-      this.btn_disabled = true
-
-      this.init_skill_videos()
-
-
-    },
-
-    async init_skill_videos() {
-      let videos = []
-      let page_num = 1
-      let current = 0
-
-      while (true) {
-
-        let courses = []
-
-        await axios.get(`/personalCenter/getSkillCourseInfoList?isComplete=0&pageSize=12&pageNum=${page_num}`, {headers: this.get_headers()}
-        ).then((res) => {
-          if (res.status === 200) {
-            this.skill_videos = res.data.data
-          }
-        }).catch((error) => {
-          console.error(error);
-        })
-
-        console.log(this.skill_videos)
-
-
-        let total = parseInt(this.skill_videos['total'])
-        current += this.skill_videos["rows"].length
-        page_num += 1
-
-        this.temp.push.apply(this.temp,this.skill_videos["rows"])
-
-        if (current === total) {
-          break
-        }
-      }
-      console.log(this.temp)
-      return videos
-    },
-
-
-    async do_get_await(url) {
-      await axios.get(url, {headers: this.get_headers()}
-      ).then((res) => {
-        if (res.status === 200) {
-          console.log(res.data.data)
-          return res.data.data
-        }
-      }).catch((error) => {
-        console.error(error);
-      })
-    },
-
-
-    get_headers() {
-
-      return {
-        "Accept": "application/json",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-        "Authorization": this.token.accessToken,
-        "Cache-Control": "no-cache",
-        "Content-Type": "application/json",
-        "Pragma": "no-cache",
-        "X-Requested-With": "XMLHttpRequest",
-      }
-    },
-
-    g_headers(access_token) {
-      return {
-        "Accept": "application/json",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-        "Authorization": access_token,
-        "Cache-Control": "no-cache",
-        "Content-Type": "application/json",
-        "Pragma": "no-cache",
-        "X-Requested-With": "XMLHttpRequest",
-      }
-    },
-
-
-    get_url() {
-      if (this.mode === 'dev') {
-        return 'http://localhost:5000/'
-      }
-      return '/api/'
-    },
-    // 获取课程
-    xxxsubmitToken(e) {
+    submitToken(e) {
       e.preventDefault();
       this.status = '正在解析课程...'
       this.btn_disabled = true
 
-      axios.post(this.get_url() + 'courses', {
+      axios.post('/api/courses', {
         'access_token': this.token.access_token,
         'refresh_token': this.token.refresh_token,
       })
@@ -251,7 +130,7 @@ export default {
     get_ratio() {
       let progress = setInterval(() => {
 
-        axios.get(this.get_url() + 'ratio')
+        axios.get('/api/ratio')
           .then((res) => {
             let data = res.data
 
@@ -316,7 +195,7 @@ export default {
         }
 
         if (this.current_courseware_id === '') {
-          axios.post(this.get_url() + 'play', this.unfinished_videos[i])
+          axios.post('/api/play', this.unfinished_videos[i])
             .then((res) => {
 
             })
@@ -355,8 +234,6 @@ export default {
     },
   },
   created() {
-
-
   },
 };
 </script>
