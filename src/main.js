@@ -6,6 +6,11 @@ import BootstrapVueIcons  from 'bootstrap-vue';
 import Vue from 'vue'
 import App from './App'
 import router from './router'
+import axios from 'axios'
+
+// 跨域
+Vue.prototype.$axios = axios
+axios.defaults.baseURL = '/api'  //关键代码
 
 Vue.config.productionTip = false
 Vue.use(BootstrapVue);
