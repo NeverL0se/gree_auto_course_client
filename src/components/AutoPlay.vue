@@ -7,8 +7,8 @@
         </div>
 
         <div class="row">
-          2. 找到位置：按F12 - 应用 - 存储 / 本地存储空间 / https://jxzh.zh12333.com - 复制： access_token 和
-          refresh_token
+          2. 找到位置：按F12 - 应用 - 存储 / 本地存储空间 / https://jxzh.zh12333.com - 复制： accessToken 和
+          refreshToken
         </div>
       </div>
     </div>
@@ -20,13 +20,13 @@
                         required
                         style="margin-top: 20px;"
                         size="lg"
-                        placeholder="粘贴 access_token"></b-form-input>
+                        placeholder="粘贴 accessToken"></b-form-input>
 
           <b-form-input id="refresh-token" name="refresh_token" v-model="token.refresh_token"
                         required
                         style="margin-top: 20px;"
                         size="lg"
-                        placeholder="粘贴 refresh_token"></b-form-input>
+                        placeholder="粘贴 refreshToken"></b-form-input>
           <div class="row">
             <button :disabled="btn_disabled" id="btn-x" type="submit" class="btn-x btn btn-primary ">{{
                 this.status
@@ -137,7 +137,7 @@ export default {
         return
       }
 
-      this.status = '开发人员正在后台观看视频...'
+      this.status = '程序员正在后台观看视频...'
       this.btn_disabled = true
 
       // 开始播放课程
@@ -218,6 +218,12 @@ export default {
                     if (error.response.status === 401) {
                       this.refresh_token()
                     }
+                    // 更新播放时长记录异常
+                    if (error.response.status === 400){
+                      // 从头播放
+                      this.unfinished_videos[i]['playing'] = '0'
+                      this.unfinished_videos[i]['total_duration'] = '未加载'
+                    }
                     console.error(error);
                   });
 
@@ -237,7 +243,6 @@ export default {
                     if (error.response.status === 401) {
                       this.refresh_token()
                     }
-                    console.error(error);
                   });
               }
               break
