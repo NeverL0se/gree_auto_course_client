@@ -16,21 +16,15 @@
     <div class="row justify-content-md-center">
       <div class="col-5">
         <b-form @submit="auto_play">
-          <b-form-input id="access-token" name="access_token" v-model="token.access_token"
-                        required
-                        style="margin-top: 20px;"
-                        size="lg"
-                        placeholder="粘贴 accessToken"></b-form-input>
+          <b-form-input id="access-token" name="access_token" v-model="token.access_token" required
+            style="margin-top: 20px;" size="lg" placeholder="粘贴 accessToken"></b-form-input>
 
-          <b-form-input id="refresh-token" name="refresh_token" v-model="token.refresh_token"
-                        required
-                        style="margin-top: 20px;"
-                        size="lg"
-                        placeholder="粘贴 refreshToken"></b-form-input>
+          <b-form-input id="refresh-token" name="refresh_token" v-model="token.refresh_token" required
+            style="margin-top: 20px;" size="lg" placeholder="粘贴 refreshToken"></b-form-input>
           <div class="row">
             <button :disabled="btn_disabled" id="btn-x" type="submit" class="btn-x btn btn-primary ">{{
-                this.status
-              }}
+              this.status
+            }}
             </button>
           </div>
         </b-form>
@@ -42,40 +36,39 @@
         <hr>
         <table class="table table-hover">
           <thead>
-          <tr>
-            <th scope="col">课程</th>
-            <th scope="col">分P</th>
-            <th scope="col">观看进度</th>
-            <th scope="col"></th>
-            <th scope="col">总时长</th>
-            <th scope="col">来源</th>
-            <th scope="col"></th>
-          </tr>
+            <tr>
+              <th scope="col">课程</th>
+              <th scope="col">分P</th>
+              <th scope="col">观看进度</th>
+              <th scope="col"></th>
+              <th scope="col">总时长</th>
+              <th scope="col">来源</th>
+              <th scope="col"></th>
+            </tr>
           </thead>
           <tbody>
-          <tr v-for="(video, index) in unfinished_videos" :key="index">
-            <td>{{ video.course_name }}</td>
-            <td>{{ video.sort }}</td>
-            <td>
-              <div class="progress">
-                <div :id="video.courseware_id" class="progress-bar bg-color"
-                     role="progressbar" aria-valuemin="0"
-                     :aria-valuenow="parseInt(video.duration)"
-                     :aria-valuemax="parseInt(video.total_duration)"
-                     :style="'width:'+ ((parseInt(video.duration) / parseInt(video.total_duration)) * 100).toFixed(2) +'%'">
+            <tr v-for="(video, index) in unfinished_videos" :key="index">
+              <td>{{ video.course_name }}</td>
+              <td>{{ video.sort }}</td>
+              <td>
+                <div class="progress">
+                  <div :id="video.courseware_id" class="progress-bar bg-color" role="progressbar" aria-valuemin="0"
+                    :aria-valuenow="parseInt(video.duration)" :aria-valuemax="parseInt(video.total_duration)"
+                    :style="'width:' + ((parseInt(video.duration) / parseInt(video.total_duration)) * 100).toFixed(2) + '%'">
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td>
-              {{ secondsToPercentage(video.duration, video.total_duration) }}
-            </td>
-            <td>{{ secondsToMinutes(video.total_duration) }}</td>
-            <td>{{ video.label }}</td>
-            <td>
-              <div class="spinner-grow  spinner-grow-sm text-success" role="status" v-if="video.playing==='1'">
-                <span class="visually-hidden">Loading...</span></div>
-            </td>
-          </tr>
+              </td>
+              <td>
+                {{ secondsToPercentage(video.duration, video.total_duration) }}
+              </td>
+              <td>{{ secondsToMinutes(video.total_duration) }}</td>
+              <td>{{ video.label }}</td>
+              <td>
+                <div class="spinner-grow  spinner-grow-sm text-success" role="status" v-if="video.playing === '1'">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -107,6 +100,7 @@ export default {
       this.btn_disabled = true
 
       this.refresh_token()
+
 
       // 获取课程
       axios.post('/courses', {
@@ -147,6 +141,7 @@ export default {
     // 播放视频
     play_control() {
       let i = 0
+
       let interval = setInterval(async () => {
 
         if (this.unfinished_videos.length === 0) {
@@ -219,7 +214,7 @@ export default {
                       this.refresh_token()
                     }
                     // 更新播放时长记录异常
-                    if (error.response.status === 400){
+                    if (error.response.status === 400) {
                       // 从头播放
                       this.unfinished_videos[i]['playing'] = '0'
                       this.unfinished_videos[i]['total_duration'] = '未加载'
@@ -242,6 +237,12 @@ export default {
                   .catch((error) => {
                     if (error.response.status === 401) {
                       this.refresh_token()
+                    }
+                    // 更新播放时长记录异常
+                    if (error.response.status === 400) {
+                      // 从头播放
+                      this.unfinished_videos[i]['playing'] = '0'
+                      this.unfinished_videos[i]['total_duration'] = '未加载'
                     }
                   });
               }
